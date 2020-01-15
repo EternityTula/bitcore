@@ -1,7 +1,7 @@
 import { Component, Input, NgZone, OnDestroy, OnInit } from '@angular/core';
 import { Subscription } from 'rxjs';
-import { ApiProvider, ChainNetwork } from '../../providers/api/api';
-import { AppBlock, BlocksProvider } from '../../providers/blocks/blocks';
+import { ApiProvider, ChainNetwork, isUTXOChain } from '../../providers/api/api';
+import { ApiEthBlock, ApiUtxoCoinBlock, AppBlock, BlocksProvider } from '../../providers/blocks/blocks';
 import { CurrencyProvider } from '../../providers/currency/currency';
 import { DefaultProvider } from '../../providers/default/default';
 import { RedirProvider } from '../../providers/redir/redir';
@@ -56,8 +56,13 @@ export class LatestBlocksComponent implements OnInit, OnDestroy {
       .getBlocks(this.chainNetwork, this.numBlocks)
       .subscribe(
         response => {
-          const blocks = response.map(block =>
-            this.blocksProvider.toAppBlock(block)
+          const blocks = response.map((block: ApiEthBlock & ApiUtxoCoinBlock ) => {
+            if(isUTXOChain(this.chainNetwork.chain)) {
+              return this.blocksProvider.toUtxoCoinAppBlock(block);
+            } else if(this.chainNetwork.chain === "ETH") {
+              return this.blocksProvider.toEthAppBlock(block);
+            }
+           }
           );
           this.blocks = blocks;
           this.loading = false;
@@ -79,8 +84,13 @@ export class LatestBlocksComponent implements OnInit, OnDestroy {
       .pageBlocks(since, this.numBlocks, this.chainNetwork)
       .subscribe(
         response => {
-          const blocks = response.map(block =>
-            this.blocksProvider.toAppBlock(block)
+          const blocks = response.map((block: ApiEthBlock & ApiUtxoCoinBlock) => {
+            if(isUTXOChain(this.chainNetwork.chain)) {
+              return this.blocksProvider.toUtxoCoinAppBlock(block);
+            } else if(this.chainNetwork.chain === "ETH") {
+              return this.blocksProvider.toEthAppBlock(block);
+            }
+           }
           );
           this.blocks = this.blocks.concat(blocks);
           this.loading = false;

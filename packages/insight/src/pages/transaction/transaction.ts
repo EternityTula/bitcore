@@ -1,6 +1,6 @@
 import { Component, Injectable } from '@angular/core';
 import { IonicPage, NavParams } from 'ionic-angular';
-import { ApiProvider, ChainNetwork } from '../../providers/api/api';
+import { ApiProvider, ChainNetwork, isUTXOChain } from '../../providers/api/api';
 import { CurrencyProvider } from '../../providers/currency/currency';
 import { PriceProvider } from '../../providers/price/price';
 import { RedirProvider } from '../../providers/redir/redir';
@@ -23,9 +23,9 @@ export class TransactionPage {
   public fromVout: boolean;
   public confirmations: number;
   public errorMessage: string;
+  public chainNetwork: ChainNetwork;
 
   private txId: string;
-  private chainNetwork: ChainNetwork;
 
   constructor(
     public navParams: NavParams,
@@ -53,8 +53,14 @@ export class TransactionPage {
 
   public ionViewDidEnter(): void {
     this.txProvider.getTx(this.txId, this.chainNetwork).subscribe(
-      data => {
-        this.tx = this.txProvider.toAppTx(data);
+      response => {
+        let tx;
+        if(isUTXOChain(this.chainNetwork.chain)) {
+          tx = this.txProvider.toUtxoCoinsAppTx(response);
+        } else if(this.chainNetwork.chain === "ETH") {
+          tx = this.txProvider.toEthAppTx(response);
+        }
+        this.tx = tx;
         this.loading = false;
         this.txProvider
           .getConfirmations(this.tx.blockheight, this.chainNetwork)
